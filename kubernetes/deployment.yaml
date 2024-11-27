@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nakul-github-repo
+  labels:
+    app: nakul-github-repo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nakul-github-repo
+  template:
+    metadata:
+      labels:
+        app: nakul-github-repo
+    spec:
+      containers:
+      - name: nakul-github-repo
+        image: 653470767467.dkr.ecr.eu-north-1.amazonaws.com/nakul-github-repo:latest
+        ports:
+        - containerPort: 3000
