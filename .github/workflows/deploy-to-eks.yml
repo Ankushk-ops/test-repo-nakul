@@ -1,4 +1,4 @@
-name: Deploy to EKS
+name: Deploy to New EKS Cluster
 
 on:
   push:
@@ -20,9 +20,9 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-north-1
 
-    - name: Authenticate with EKS
+    - name: Authenticate with New EKS Cluster
       run: |
-        aws eks update-kubeconfig --region eu-north-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
+        aws eks update-kubeconfig --region eu-north-1 --name new-eks-cluster
 
     - name: Deploy to Kubernetes
       run: |
