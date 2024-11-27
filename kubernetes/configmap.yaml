@@ -11,7 +11,7 @@ data:
         - system:bootstrappers
         - system:nodes
   mapUsers: |
-    - userarn: arn:aws:iam::<account_id>:user/<github-actions-user>
+    - userarn: arn:aws:iam::653470767467:user/Ankushk-ops
       username: github-actions
       groups:
         - system:masters
