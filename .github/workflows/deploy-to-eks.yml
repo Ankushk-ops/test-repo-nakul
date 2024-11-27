@@ -23,11 +23,12 @@ jobs:
     - name: Authenticate with New EKS Cluster
       run: |
         aws eks update-kubeconfig --region eu-north-1 --name new-eks-cluster
+        cat ~/.kube/config
 
     - name: Deploy to Kubernetes
       run: |
-        kubectl apply -f kubernetes/deployment.yaml
-        kubectl apply -f kubernetes/service.yaml
+        kubectl apply -f kubernetes/deployment.yaml --validate=false --v=9
+        kubectl apply -f kubernetes/service.yaml --validate=false
 
     - name: Verify Deployment
       run: kubectl get pods
