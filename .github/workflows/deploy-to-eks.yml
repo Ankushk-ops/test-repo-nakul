@@ -1,27 +1,45 @@
-name: Build
+name: Build and Analyze with SonarQube
 
 on:
   push:
     branches:
       - main
-
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build:
-    name: Build and analyze
+  sonar-analysis:
+    name: SonarQube Analysis
     runs-on: ubuntu-latest
-    
+
     steps:
-      - uses: actions/checkout@v4
+      # Step 1: Check out the code
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: sonarsource/sonarqube-scan-action@v3
+          fetch-depth: 0  # Ensures full history for accurate analysis
+
+      # Step 2: Install necessary dependencies
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Specify the version of Node.js as required by the project
+
+      - name: Install dependencies
+        run: npm install  # Adjust this to your package manager if needed
+
+      # Step 3: Run SonarQube analysis
+      - name: Run SonarQube Scanner
+        uses: sonarsource/sonarqube-scan-action@v3
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      # If you wish to fail your job when the Quality Gate is red, uncomment the
-      # following lines. This would typically be used to fail a deployment.
-      # - uses: sonarsource/sonarqube-quality-gate-action@master
-      #   timeout-minutes: 5
+          SONAR_SCANNER_OPTS: "-Dsonar.projectKey=test-repo-nakul -Dsonar.sources=."
+
+      # Optional Step 4: Check Quality Gate status
+      # Uncomment the following lines to fail the workflow if the Quality Gate fails
+      # - name: Quality Gate Check
+      #   uses: sonarsource/sonarqube-quality-gate-action@master
       #   env:
       #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
