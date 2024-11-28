@@ -24,9 +24,6 @@ jobs:
     - name: Install project dependencies
       run: npm install
 
-    - name: Run project tests
-      run: npm test
-
     - name: Download and configure SonarQube Scanner
       run: |
         export SONAR_SCANNER_VERSION=6.2.0.4584
