@@ -1,53 +1,27 @@
-name: CI with SonarQube
+name: Build
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+
 
 jobs:
-  sonar-analysis:
+  build:
+    name: Build and analyze
     runs-on: ubuntu-latest
-
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-
-    - name: Install project dependencies
-      run: npm install
-
-    - name: Download and configure SonarQube Scanner
-      run: |
-        # Set Sonar Scanner version
-        export SONAR_SCANNER_VERSION=6.2.0.4584
-        export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
-
-        # Download and unzip the Sonar Scanner
-        mkdir -p $HOME/.sonar
-        curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
-        unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
-
-        # Add the scanner binary to PATH for this job
-        echo "export PATH=$SONAR_SCANNER_HOME/bin:\$PATH" >> $GITHUB_ENV
-      shell: bash
-
-    - name: Debug PATH Environment Variable
-      run: echo "PATH is: $PATH"
-
-    - name: Run SonarQube analysis
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: |
-        sonar-scanner \
-          -Dsonar.projectKey=test-repo-nakul \
-          -Dsonar.sources=. \
-          -Dsonar.host.url=http://34.216.141.89:9000 \
-          -Dsonar.login=${SONAR_TOKEN}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: sonarsource/sonarqube-scan-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      # If you wish to fail your job when the Quality Gate is red, uncomment the
+      # following lines. This would typically be used to fail a deployment.
+      # - uses: sonarsource/sonarqube-quality-gate-action@master
+      #   timeout-minutes: 5
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
