@@ -1,4 +1,4 @@
-name: Build and Analyze with SonarQube
+name: Build Docker Image and Snyk Security Scan
 
 on:
   push:
@@ -9,37 +9,36 @@ on:
       - main
 
 jobs:
-  sonar-analysis:
-    name: SonarQube Analysis
+  scan-and-build:
+    name: Snyk Code Scan and Docker Build
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the code
+      # Step 1: Check out the repository
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensures full history for accurate analysis
+          fetch-depth: 0  # Ensures full history for better analysis
 
-      # Step 2: Install necessary dependencies
+      # Step 2: Set up Node.js environment for Snyk dependency scan
       - name: Set up Node.js environment
         uses: actions/setup-node@v3
         with:
-          node-version: '16'  # Specify the version of Node.js as required by the project
+          node-version: '16'
 
       - name: Install dependencies
         run: npm install  # Adjust this to your package manager if needed
 
-      # Step 3: Run SonarQube analysis
-      - name: Run SonarQube Scanner
-        uses: sonarsource/sonarqube-scan-action@v3
+      # Step 3: Snyk dependency security scan
+      - name: Snyk Dependency Scan
+        uses: snyk/actions/node@v3
+        with:
+          args: test
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_SCANNER_OPTS: "-Dsonar.projectKey=test-repo-nakul -Dsonar.sources=."
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      # Optional Step 4: Check Quality Gate status
-      # Uncomment the following lines to fail the workflow if the Quality Gate fails
-      # - name: Quality Gate Check
-      #   uses: sonarsource/sonarqube-quality-gate-action@master
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # Step 4: Fail the workflow if vulnerabilities are found
+      - name: Fail on Snyk Vulnerabilities
+        if: failure()  # This ensures the workflow stops if Snyk finds vulnerabilities
+        run: exit 1
+
