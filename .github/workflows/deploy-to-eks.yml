@@ -1,34 +1,56 @@
-name: Deploy to New EKS Cluster
+name: Node.js CI with SonarQube and Kubernetes
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy:
+  ci:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Configure AWS CLI
-      uses: aws-actions/configure-aws-credentials@v2
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-north-1
+        node-version: '16'
 
-    - name: Authenticate with New EKS Cluster
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      run: npm test
+
+    - name: Set up Java (for SonarQube scanner)
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+
+    - name: Cache SonarQube dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+
+    - name: Install SonarQube scanner
       run: |
-        aws eks update-kubeconfig --region eu-north-1 --name new-eks-cluster
-        cat ~/.kube/config
+        curl -sSL https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip -o sonar-scanner.zip
+        unzip sonar-scanner.zip -d $HOME/
+        echo "export PATH=$HOME/sonar-scanner-4.8.0.2856-linux/bin:$PATH" >> $GITHUB_ENV
 
-    - name: Deploy to Kubernetes
+    - name: Run SonarQube scan
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
-        kubectl apply -f kubernetes/deployment.yaml --validate=false --v=9
-        kubectl apply -f kubernetes/service.yaml --validate=false
+        sonar-scanner \
+          -Dsonar.projectKey=your_project_key \
+          -Dsonar.host.url=http://34.216.141.89:9000 \
+          -Dsonar.login=${SONAR_TOKEN}
 
-    - name: Verify Deployment
-      run: kubectl get pods
+
