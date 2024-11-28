@@ -31,14 +31,10 @@ jobs:
 
       # Step 3: Snyk dependency security scan
       - name: Snyk Dependency Scan
-        uses: snyk/actions/node@v3
+        uses: snyk/actions/node@master
         with:
           args: test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      # Step 4: Fail the workflow if vulnerabilities are found
-      - name: Fail on Snyk Vulnerabilities
-        if: failure()  # This ensures the workflow stops if Snyk finds vulnerabilities
-        run: exit 1
-
+      # Step 4: Fail the workflow if vulnerabilities are f
