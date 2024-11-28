@@ -1,4 +1,4 @@
-name: Node.js CI with SonarQube and Kubernetes
+name: CI with SonarQube
 
 on:
   push:
@@ -9,48 +9,38 @@ on:
       - main
 
 jobs:
-  ci:
+  sonar-analysis:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Setup Node.js
+    - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'
+        node-version: '16' # Use the appropriate Node.js version for your project
 
-    - name: Install dependencies
+    - name: Install project dependencies
       run: npm install
 
-    - name: Run tests
+    - name: Run project tests
       run: npm test
 
-    - name: Set up Java (for SonarQube scanner)
-      uses: actions/setup-java@v3
-      with:
-        java-version: '11'
-
-    - name: Cache SonarQube dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.sonar/cache
-        key: ${{ runner.os }}-sonar
-
-    - name: Install SonarQube scanner
+    - name: Download and configure SonarQube Scanner
       run: |
-        curl -sSL https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip -o sonar-scanner.zip
-        unzip sonar-scanner.zip -d $HOME/
-        echo "export PATH=$HOME/sonar-scanner-4.8.0.2856-linux/bin:$PATH" >> $GITHUB_ENV
+        export SONAR_SCANNER_VERSION=6.2.0.4584
+        export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
+        curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
+        unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+        export PATH=$SONAR_SCANNER_HOME/bin:$PATH
 
-    - name: Run SonarQube scan
+    - name: Run SonarQube analysis
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         sonar-scanner \
-          -Dsonar.projectKey=your_project_key \
+          -Dsonar.projectKey=test-repo-nakul \
+          -Dsonar.sources=. \
           -Dsonar.host.url=http://34.216.141.89:9000 \
           -Dsonar.login=${SONAR_TOKEN}
-
-
