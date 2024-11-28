@@ -19,7 +19,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16' # Use the appropriate Node.js version for your project
+        node-version: '16'
 
     - name: Install project dependencies
       run: npm install
@@ -30,7 +30,8 @@ jobs:
         export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
         curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
         unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
-        export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+        echo "export PATH=$SONAR_SCANNER_HOME/bin:$PATH" >> $GITHUB_ENV
+      shell: bash
 
     - name: Run SonarQube analysis
       env:
