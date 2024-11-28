@@ -26,12 +26,21 @@ jobs:
 
     - name: Download and configure SonarQube Scanner
       run: |
+        # Set Sonar Scanner version
         export SONAR_SCANNER_VERSION=6.2.0.4584
         export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
+
+        # Download and unzip the Sonar Scanner
+        mkdir -p $HOME/.sonar
         curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
         unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
-        echo "export PATH=$SONAR_SCANNER_HOME/bin:$PATH" >> $GITHUB_ENV
+
+        # Add the scanner binary to PATH for this job
+        echo "export PATH=$SONAR_SCANNER_HOME/bin:\$PATH" >> $GITHUB_ENV
       shell: bash
+
+    - name: Debug PATH Environment Variable
+      run: echo "PATH is: $PATH"
 
     - name: Run SonarQube analysis
       env:
