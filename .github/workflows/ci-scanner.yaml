@@ -71,6 +71,6 @@ jobs:
 
     - name: Push Docker Image to ECR
       run: |
-        IMAGE_URI="${{ steps.build-and-scan.outputs.scan_result }}"
+        IMAGE_URI="${{ needs.build-and-scan.outputs.image_uri }}"
         echo "Pushing Docker Image $IMAGE_URI to Amazon ECR..."
         docker push "$IMAGE_URI"
