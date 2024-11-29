@@ -1,0 +1,54 @@
+name: Build, Scan, and Push Docker Image to ECR
+
+on:
+  workflow_dispatch: # Manual trigger
+    inputs:
+      image_tag:
+        description: "Tag for the Docker image"
+        required: true
+        default: "latest"
+
+env:
+  REGION: us-east-1
+  ECR_REPOSITORY: sdcsdcs 
+  IMAGE_NAME: sdcdsc
+
+jobs:
+  build-scan-push:
+    name: Build, Scan, and Push Docker Image
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build Docker Image
+      run: |
+        echo "Building Docker Image..."
+        IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.event.inputs.image_tag }}"
+        docker build -t "$IMAGE_URI" .
+        echo "::set-output name=image_uri::$IMAGE_URI"
+
+    - name: Scan Docker Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ steps.build-docker.outputs.image_uri }}
+        format: table
+        exit-code: 0 
+
+    - name: Push Docker Image to ECR
+      run: |
+        IMAGE_URI="${{ steps.build-docker.outputs.image_uri }}"
+        echo "Pushing Docker Image $IMAGE_URI to Amazon ECR..."
+        docker push "$IMAGE_URI"
+
+    - name: Verify Image in ECR
+      run: |
+        IMAGE_URI="${{ steps.build-docker.outputs.image_uri }}"
+        echo "Verifying the pushed image exists in ECR..."
+        aws ecr describe-images --repository-name "${{ env.ECR_REPOSITORY }}" --image-ids imageTag="${{ github.event.inputs.image_tag }}"
