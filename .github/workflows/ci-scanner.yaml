@@ -52,6 +52,6 @@ jobs:
     - name: Push Docker Image to ECR
       if: success() # Only push if the scan passes
       run: |
-        IMAGE_URI="${{ steps.build-image.outputs.image_uri }}"
+        IMAGE_URI="${{ steps.build-docker.outputs.image_uri }}"
         echo "Pushing Docker Image $IMAGE_URI to Amazon ECR..."
         docker push "$IMAGE_URI"
