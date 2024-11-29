@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       scan_result: ${{ steps.trivy.outputs.result }}
+      image_uri: ${{ steps.build-docker.outputs.image_uri }}
 
     steps:
     - name: Checkout code
