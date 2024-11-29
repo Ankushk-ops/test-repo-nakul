@@ -1,4 +1,4 @@
-name: Build, Scan, and Push Docker Image to ECR
+name: ECR
 
 # on:
 #   workflow_dispatch:
@@ -71,9 +71,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
     - name: Set up AWS CLI
       uses: aws-actions/configure-aws-credentials@v1
       with:
