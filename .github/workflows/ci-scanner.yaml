@@ -44,11 +44,6 @@ jobs:
         exit-code: 0 
       continue-on-error: true
 
-    - name: Print Scan Results
-      run: |
-        echo "Trivy Scan Results:"
-        cat scan-results.txt
-
   wait-for-approval:
     name: Wait for Approval
     needs: build-and-scan
