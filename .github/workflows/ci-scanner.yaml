@@ -21,9 +21,6 @@ jobs:
   build-and-scan:
     name: Build and Scan Docker Image
     runs-on: ubuntu-latest
-    outputs:
-#      scan_result: ${{ steps.trivy.outputs.result }}
-      image_uri: ${{ steps.build-docker.outputs.image_uri }}
 
     steps:
     - name: Checkout code
@@ -36,43 +33,25 @@ jobs:
         docker build -t "$IMAGE_URI" .
         echo "::set-output name=image_uri::$IMAGE_URI"
 
-  #   - name: Scan Docker Image
-  #     id: trivy
-  #     uses: aquasecurity/trivy-action@master
-  #     with:
-  #       image-ref: ${{ steps.build-docker.outputs.image_uri }}
-  #       format: table
-  #       exit-code: 0 
-  #     continue-on-error: true
+    - name: Scan Docker Image
+      id: trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ steps.build-docker.outputs.image_uri }}
+        format: table
+        exit-code: 0 
+      continue-on-error: true
 
-  # wait-for-approval:
-  #   name: Wait for Approval
-  #   needs: build-and-scan
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: production 
-  #     url: https://github.com/${{ github.repository }}/actions/runs
-  #   steps:
-  #   - name: Review Scan Results and Approve
-  #     run: |
-  #       echo "Please review the scan results printed in the logs."
-
-  push-to-ecr:
-    name: Push Docker Image to ECR
-    needs: build-and-scan
-    runs-on: ubuntu-latest
-
-    steps:
     - name: Set up AWS CLI
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-north-1
-
+        
     - name: Push Docker Image to ECR
+      if: success() # Only push if the scan passes
       run: |
-        echo "Received IMAGE_URI: ${{ needs.build-and-scan.outputs.image_uri }}"
-        IMAGE_URI="${{ needs.build-and-scan.outputs.image_uri }}"
+        IMAGE_URI="${{ steps.build-image.outputs.image_uri }}"
         echo "Pushing Docker Image $IMAGE_URI to Amazon ECR..."
         docker push "$IMAGE_URI"
