@@ -1,23 +1,28 @@
 name: Build, Scan, and Push Docker Image to ECR
 
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       image_tag:
+#         description: "Tag for the Docker image"
+#         required: true
+#         default: "latest"
 on:
-  workflow_dispatch: # Manual trigger
-    inputs:
-      image_tag:
-        description: "Tag for the Docker image"
-        required: true
-        default: "latest"
+  push:
+    branches:
+      - main
 
 env:
-  REGION: us-east-1
-  ECR_REPOSITORY: sdcsdcs 
-  IMAGE_NAME: sdcdsc
+  REGION: eu-north-1 
+  ECR_REPOSITORY: 653470767467.dkr.ecr.eu-north-1.amazonaws.com/nakul-github-repo
+ # IMAGE_NAME: 
 
 jobs:
-  build-scan-push:
-    name: Build, Scan, and Push Docker Image
+  build-and-scan:
+    name: Build and Scan Docker Image
     runs-on: ubuntu-latest
-    environment: dev
+    outputs:
+      scan_result: ${{ steps.trivy.outputs.result }}
 
     steps:
     - name: Checkout code
@@ -28,27 +33,56 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Build Docker Image
+      id: build-docker
       run: |
-        echo "Building Docker Image..."
         IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.event.inputs.image_tag }}"
         docker build -t "$IMAGE_URI" .
         echo "::set-output name=image_uri::$IMAGE_URI"
 
     - name: Scan Docker Image
+      id: trivy
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: ${{ steps.build-docker.outputs.image_uri }}
         format: table
         exit-code: 0 
+      continue-on-error: true
+
+    - name: Print Scan Results
+      run: |
+        echo "Trivy Scan Results:"
+        cat scan-results.txt
+
+  wait-for-approval:
+    name: Wait for Approval
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    environment:
+      name: production 
+      url: https://github.com/${{ github.repository }}/actions/runs
+    steps:
+    - name: Review Scan Results and Approve
+      run: |
+        echo "Please review the scan results printed in the logs."
+
+  push-to-ecr:
+    name: Push Docker Image to ECR
+    needs: wait-for-approval
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
 
     - name: Push Docker Image to ECR
       run: |
-        IMAGE_URI="${{ steps.build-docker.outputs.image_uri }}"
+        IMAGE_URI="${{ steps.build-and-scan.outputs.scan_result }}"
         echo "Pushing Docker Image $IMAGE_URI to Amazon ECR..."
         docker push "$IMAGE_URI"
-
-    - name: Verify Image in ECR
-      run: |
-        IMAGE_URI="${{ steps.build-docker.outputs.image_uri }}"
-        echo "Verifying the pushed image exists in ECR..."
-        aws ecr describe-images --repository-name "${{ env.ECR_REPOSITORY }}" --image-ids imageTag="${{ github.event.inputs.image_tag }}"
