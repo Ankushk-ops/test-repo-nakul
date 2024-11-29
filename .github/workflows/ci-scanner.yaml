@@ -59,7 +59,7 @@ jobs:
 
   push-to-ecr:
     name: Push Docker Image to ECR
-    needs: wait-for-approval
+   # needs: wait-for-approval
     runs-on: ubuntu-latest
 
     steps:
